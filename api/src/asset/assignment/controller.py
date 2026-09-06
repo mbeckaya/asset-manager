@@ -1,0 +1,81 @@
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+from src.asset.assignment.service import AssetAssignmentService
+from src.asset.status.service import AssetStatusService
+from src.asset.service import AssetService
+from src.asset.assignment.model import AssetAssignment, AssetAssignmentCreate
+from src.asset.status.model import AssetStatusCreate
+from src.core.controller import BaseController
+from src.asset.status.enums import AssetStatusEnum
+
+class AssetAssignmentController(BaseController):
+    def __init__(
+            self, 
+            asset_assignment_service: AssetAssignmentService,
+            asset_status_service: AssetStatusService,
+            asset_service: AssetService,
+    ):
+        super().__init__("Asset Assignment")
+        self.__asset_assignment_service = asset_assignment_service
+        self.__asset_status_service = asset_status_service
+        self.__asset_service = asset_service
+
+    def index(self) -> list[AssetAssignment]:
+        return self.__asset_assignment_service.get_all()
+
+    def store(self, asset_assignment_new: AssetAssignmentCreate) -> AssetAssignment:
+        asset = self.__asset_service.get_by_id(
+            asset_assignment_new.asset_id
+        )
+
+        if not asset:
+            self.err_not_found(asset_assignment_new.asset_id)
+
+        if asset.status is not AssetStatusEnum.AVAILABLE:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Asset with id {asset.id} is not available."
+            )
+
+        try:
+            asset_assignment = self.__asset_assignment_service.create(
+                asset_assignment_new
+            ) 
+        except IntegrityError:
+            self.err_res_conflict()
+        except:
+            self.err_default()
+
+        self.__asset_status_service.create(
+            AssetStatusCreate(
+                status=AssetStatusEnum.ASSIGNED,
+                asset_id=asset_assignment.asset_id,
+            )
+        ) 
+
+        return asset_assignment
+
+    def update(
+            self, 
+            asset_assignment_id: int, 
+            asset_assignment_updated: AssetAssignment
+    ) -> AssetAssignment:
+        try:
+            asset_assignment = self.__asset_assignment_service.update(
+                asset_assignment_id, 
+                asset_assignment_updated,
+            )
+        except:
+            self.err_default()
+
+        if not asset_assignment:
+            self.err_not_found(asset_assignment_id)
+
+        self.__asset_status_service.create(
+            AssetStatusCreate(
+                status=AssetStatusEnum.AVAILABLE,
+                asset_id=asset_assignment.asset_id,
+            )
+        ) 
+
+        return asset_assignment

@@ -28,10 +28,10 @@ The project consists of a **FastAPI backend**, **React frontend**, and a planned
 ## ✨ Features
 
 ### API
-- [ ] REST API
-- [ ] Asset CRUD operations
-- [ ] Asset assignments
-- [ ] Asset lifecycle status
+- [X] REST API
+- [X] Asset CRUD operations
+- [X] Asset assignments
+- [X] Asset lifecycle status
 
 ### Web
 - [ ] React frontend
@@ -53,6 +53,6 @@ asset-manager/
 
 ## 🚧 Status
 
-**Planned**
+**In Progress**
 
-The project is currently in the planning stage. API, web frontend, importer, and infrastructure are planned.
+The FastAPI backend is complete. Frontend, importer, and containerization are planned.
